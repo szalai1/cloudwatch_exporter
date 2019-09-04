@@ -1,6 +1,7 @@
 package io.prometheus.cloudwatch;
 
 import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.services.cloudwatch.AmazonCloudWatchClient;
@@ -11,6 +12,10 @@ import com.amazonaws.services.cloudwatch.model.GetMetricStatisticsRequest;
 import com.amazonaws.services.cloudwatch.model.GetMetricStatisticsResult;
 import com.amazonaws.services.cloudwatch.model.ListMetricsRequest;
 import com.amazonaws.services.cloudwatch.model.ListMetricsResult;
+import com.amazonaws.auth.AWSCredentialsProviderChain;
+import com.amazonaws.auth.ContainerCredentialsProvider;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.services.cloudwatch.model.Metric;
 import io.prometheus.client.Collector;
 import io.prometheus.client.Counter;
@@ -124,11 +129,11 @@ public class CloudWatchCollector extends Collector {
 
         if (client == null) {
           if (config.containsKey("role_arn")) {
-            STSAssumeRoleSessionCredentialsProvider credentialsProvider = new STSAssumeRoleSessionCredentialsProvider(
-              (String) config.get("role_arn"),
-              "cloudwatch_exporter"
-            );
-            client = new AmazonCloudWatchClient(credentialsProvider);
+            client = new AmazonCloudWatchClient(
+                    new AWSCredentialsProviderChain(
+                    new DefaultAWSCredentialsProviderChain(),
+                    InstanceProfileCredentialsProvider.getInstance() // Used by Jenkins
+            ));
           } else {
             client = new AmazonCloudWatchClient();
           }
